@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 static const char bin[16][5] = {"0000", "0001", "0010", "0011", "0100",
@@ -32,6 +31,7 @@ void bin_to_hex(char* bin_text, char* res) {
         if (strcmp(hexa, bin[j]) == 0) {
           res[h] = hex[j];
           h++;
+          res[h] = '\0';
         }
       }
     }
@@ -39,12 +39,24 @@ void bin_to_hex(char* bin_text, char* res) {
 }
 
 void bin_to_base64(char* bin_text, char* res) {
-  int i, j, h, k, len, index;
+  int i, j, h, k, p, len, index;
   char bina[7];
+  char pad[17] = "0000000000000000";
   h = 0;
   index = 0;
+  p = 0;
   len = strlen(bin_text);
-  printf("Entering loop!\n");
+  if (len%6 == 2) {
+    strncat(bin_text, pad, 16);
+    p = 16;
+  }
+  if (len%6 == 4) {
+    strncat(bin_text, pad, 8);
+    p = 8;
+  }
+  len += p;
+  printf("%d\n", len);
+  printf("%s\n", bin_text);
   for (i = 0; i < len; i++) {
     bina[i%6] = bin_text[i];
     if (i%6 == 5) {
@@ -61,27 +73,51 @@ void bin_to_base64(char* bin_text, char* res) {
       index = 0;
     }
   }
+  
+  if (p != 0) {
+    if (p == 16) {
+      if (res[h-1] == 'A') {
+        res[h-1] = '=';
+      }
+      if (res[h-2] == 'A') {
+        res[h-2] = '=';
+      }
+    }
+    if (p == 8) {
+      if (res[h-1] == 'A') {
+        res[h-1] = '=';
+      }
+    }
+  }
 }
 
 int main() {
   int i;
-  char text[128] = "49276d206b696c6c696e6720796f757220627261696e2i06c696b65206120706f69736f6e6f7573206d757368726f6f6d";
+  char text[1024];
+  text[0] = '\0';
+  fgets(text, 1024, stdin);
+  text[strcspn(text, "\n")] = 0;
+  if (strlen(text)%2 != 0) {
+    printf("The hex string is odd\n");
+    printf("%d", strlen(text));
+    return 1;
+  }
   size_t len = strlen(text);
-  printf("%d\n", len);
+  printf("lenght of initial text %d\n", len);
   char bin_text[len*4+4];
   char hex_text[len+1];
-  char base64_text[3000];
+  char base64_text[4096];
   bin_text[0] = '\0';
   hex_text[0] = '\0';
   base64_text[0] = '\0';
 
   hex_to_bin(text, bin_text, len);
-  printf("%s\n", bin_text);
+  printf("hex to bin: %s\n", bin_text);
 
   bin_to_hex(bin_text, hex_text);
-  printf("%s\n", hex_text);
+  printf("bin to hex: %s\n", hex_text);
 
   bin_to_base64(bin_text, base64_text);
-  printf("%s\n", base64_text);
+  printf("bin to base64: %s\n", base64_text);
   return 0;
 }
