@@ -9,6 +9,7 @@ int main(int argc, char* argv[]) {
   if (argc < 2) {
     printf("Missing filename!\n");
     printf("Usage: %s <filename>", argv[0]);
+    return 1;
   }
   char const* const fileName = argv[1];
   FILE* file = fopen(fileName, "r");
