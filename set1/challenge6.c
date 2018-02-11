@@ -28,13 +28,12 @@ int base64_index(char c) {
   return 0;
 }
 
-void base64_to_ascii(char* b64_text, char* ascii_text[MAXBUFLEN]) {
+void base64_to_ascii(char* b64_text, char* ascii_text) {
   char a,b,c,d;
   int counter = 1;
   int h = 0;
   int i = 0;
   while(b64_text[i] != '\0') {
-    printf("%c", b64_text[i]);
     switch (counter) {
       case 1:
        a = base64_index(b64_text[i]);
@@ -50,11 +49,12 @@ void base64_to_ascii(char* b64_text, char* ascii_text[MAXBUFLEN]) {
        break;
     }
     if (counter%4 == 0) {
-      ascii_text[h] = (a << 2) | (b >> 4);
-      h++;
-      ascii_text[h] = (b << 4) | (c >> 2);
-      h++;
-      ascii_text[h] = (c << 6) | d;
+      // valued needs to be masked against 0xff because sprintf promotes
+      // char to int and it can turn some higher bits to 1 so we zero them
+      // out to get the byte we need
+      sprintf(ascii_text+(h*2), "%02x", (((a << 2) | (b >> 4)) &0xff ));
+      sprintf(ascii_text+(++h*2), "%02x", (((b << 4) | (c >> 2)) &0xff ));
+      sprintf(ascii_text+(++h*2), "%02x", (((c << 6) | d) &0xff));
       h++;
       counter = 1;
       i++;
@@ -96,9 +96,7 @@ int main(int argc, char* argv[]) {
   char asciitext[MAXBUFLEN*2];
   asciitext[0] = '\0';
   base64_to_ascii(basetext, asciitext);
-  for(int i = 0; i < strlen(asciitext); i++) {
-    printf("%02x", asciitext[i]);
-  }
+  printf("%s", asciitext);
   printf("\n");
   return(0);
 }
