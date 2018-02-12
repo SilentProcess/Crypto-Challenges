@@ -3,10 +3,20 @@
 #define MAXBUFLEN 4096
 
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char hex[] = "0123456789abcdef";
+
+int char_to_int(char c) {
+  const char* ptr = strchr(hex, c);
+  if(ptr) {
+    int index = ptr - hex;
+    return index;
+  }
+  return 0;
+}
 
 int hamming_distance(char* a, char* b) {
   int distance = 0;
-  int k, c;
+  char k, c;
   for (int j = 0; j < strlen(a); j++) {
     for(int i = sizeof(a)-1;i >= 0; i--) {
       k = a[j] >> i;
@@ -19,6 +29,26 @@ int hamming_distance(char* a, char* b) {
   return distance;
 }
 
+int hamming_distance_char(char a, char b) {
+  int distance = 0;
+  char k, c;
+  for(int i = 7; i >= 0; i--) {
+    k = a >> i;
+    c = b >> i;
+    if((k & 0x01) != (c & 0x01)) {
+      distance++;
+    }
+  }
+  return distance;
+}
+
+int hex_to_ascii(char c1, char c2) {
+  int upper = char_to_int(c1) * 16;
+  int lower = char_to_int(c2);
+  return upper+lower;
+}
+
+
 int base64_index(char c) {
   const char* ptr = strchr(base64_table, c); 
     if(ptr) {
@@ -28,7 +58,7 @@ int base64_index(char c) {
   return 0;
 }
 
-void base64_to_ascii(char* b64_text, char* ascii_text) {
+void base64_to_hex(char* b64_text, char* ascii_text) {
   char a,b,c,d;
   int counter = 1;
   int h = 0;
@@ -65,14 +95,58 @@ void base64_to_ascii(char* b64_text, char* ascii_text) {
   }
 }
 
+int calculate_key_size(char* hextext) {
+  int KEYSIZE;
+  int i;
+  int a = 2;
+  unsigned char x;
+  unsigned char y;
+  unsigned char temp1;
+  unsigned char temp2;
+  int index = 0;
+  int score = 0;
+  for (KEYSIZE = 2; KEYSIZE <= 40; KEYSIZE++) {
+    for(int i = 0; i < 10; i++) {
+      for (int h = 0; h < KEYSIZE; h++) {
+        x = hextext[index];
+        y = hextext[index+1];
+        temp1 = hex_to_ascii(x, y);
+        //printf("T(1)%02x ", temp1);
+        x = hextext[index+KEYSIZE*2];
+        y = hextext[index+KEYSIZE*2+1];
+        temp2 = hex_to_ascii(x, y);
+        //printf("T(2)%02x ", temp2);
+        score += hamming_distance_char(temp1, temp2);
+        index += 2;
+      }
+      //printf("\n");
+      index = KEYSIZE*2 *(i+1);
+    }
+    index = 0;
+    //printf("-----------");
+    score = ((score * 1000) / 5) / KEYSIZE;
+    printf("score: %d key: %d\n", score, KEYSIZE);
+    score = 0;
+  }
+  return score;
+}
+
 int main(int argc, char* argv[]) {
   char a[] = "this is a test";
   char b[] = "wokka wokka!!!";
+
   printf("hamming distance test: %d\n", hamming_distance(a,b));
+
+  int distance = 0;
+  for(int x = 0; x < strlen(a); x++) {
+    distance += hamming_distance_char(a[x], b[x]);
+  }
+  printf("char dist: %d\n", distance);
+
 
   if (argc < 2) {
     printf("Missing filename!\n");
-    printf("Usage: %s <filename>", argv[0]);
+    printf("Usage: %s <filename>\n", argv[0]);
     return 1;
   }
 
@@ -93,10 +167,10 @@ int main(int argc, char* argv[]) {
     fclose(file);
   }
   
-  char asciitext[MAXBUFLEN*2];
-  asciitext[0] = '\0';
-  base64_to_ascii(basetext, asciitext);
-  printf("%s", asciitext);
-  printf("\n");
+  char hex_text[MAXBUFLEN*2];
+  hex_text[0] = '\0';
+  base64_to_hex(basetext, hex_text);
+  //printf("%s", hex_text);
+  printf("Best key size: %d\n", calculate_key_size(hex_text));
   return(0);
 }
