@@ -239,6 +239,7 @@ int main(int argc, char* argv[]) {
   base64_to_hex(basetext, hex_text);
   printf("\n");
   keysize = calculate_key_size(hex_text);
+  // git demo for friend pls ignore
   transpose_and_bruteforce(keysize, keyarr, hex_text);
 
   decode(keyarr, hex_text, result, keysize);
